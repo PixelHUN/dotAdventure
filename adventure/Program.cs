@@ -44,263 +44,241 @@ namespace adventure
 
         static void ParseLines()
         {
-            if (lines[curLine].StartsWith(":"))
+            switch(lines[curLine])
             {
+                case string s
+                when s.StartsWith("goto::"):
+                    string[] got = lines[curLine].Split("::");
+                    GotoFunction(got[1]);
+                    break;
 
-            }
-            else if (lines[curLine].StartsWith("goto::"))
-            {
-                string[] got = lines[curLine].Split("::");
-                GotoFunction(got[1]);
+                case string s
+                when s.StartsWith("declare$"):
+                    string var = lines[curLine].Replace("declare$", "");
 
-            }
-            else if(lines[curLine].StartsWith("declare$"))
-            {
-                string var = lines[curLine].Replace("declare$", "");
+                    bool exists = false;
 
-                bool exists = false;
-
-                foreach(Variable item in vars)
-                {
-                    if(item.name == var)
+                    foreach (Variable item in vars)
                     {
-                        exists = true;
-                    }
-                }
-
-                if (!exists)
-                    vars.Add(new Variable(var, "0"));
-            }
-            else if(lines[curLine].StartsWith("set$"))
-            {
-                string[] var = lines[curLine].Replace("set$", "").Split(";");
-                if (var.Length != 2)
-                    ParseError("Wrong number of arguments", curLine);
-
-                bool exists = false;
-
-                foreach (Variable item in vars)
-                {
-                    if (item.name == var[0])
-                    {
-                        exists = true;
-                        item.val = var[1];
-                    }
-                }
-
-                if (!exists)
-                {
-                    //vars.Add(new Variable(var, 0));
-                    ParseError($"Variable ({var[0]}) doesn't exist", curLine);
-                }
-            }
-            else if (lines[curLine].StartsWith("add$"))
-            {
-                string[] var = lines[curLine].Replace("add$", "").Split(";");
-                if (var.Length != 2)
-                    ParseError("Wrong number of arguments", curLine);
-
-                bool exists = false;
-
-                foreach (Variable item in vars)
-                {
-                    if (item.name == var[0])
-                    {
-                        exists = true;
-                        int addition;
-                        if (!int.TryParse(var[1], out addition))
+                        if (item.name == var)
                         {
-                            ParseError("Given value is not an integer (whole number)", curLine);
+                            exists = true;
                         }
-                        else
+                    }
+
+                    if (!exists)
+                        vars.Add(new Variable(var, "0"));
+                    break;
+
+                case string s
+                when s.StartsWith("set$"):
+                    string[] setarray = lines[curLine].Replace("set$", "").Split(";");
+                    if (setarray.Length != 2)
+                        ParseError("Wrong number of arguments", curLine);
+
+                    ReturnVar(setarray[0]).val = setarray[1];
+                    break;
+
+                case string s
+                when s.StartsWith("add$"):
+                    string[] addvar = lines[curLine].Replace("add$", "").Split(";");
+                    if (addvar.Length != 2)
+                        ParseError("Wrong number of arguments", curLine);
+
+                    int result = int.Parse(RetriveValues(addvar[0])) + int.Parse(RetriveValues(addvar[1]));
+                    ReturnVar(addvar[0]).val = result.ToString();
+                    break;
+
+                case string s
+                when s.StartsWith("multiply$"):
+                    string[] multivar = lines[curLine].Replace("multiply$", "").Split(";");
+                    if (multivar.Length != 2)
+                        ParseError("Wrong number of arguments", curLine);
+
+                    int mresult = int.Parse(RetriveValues(multivar[0])) * int.Parse(RetriveValues(multivar[1]));
+                    ReturnVar(multivar[0]).val = mresult.ToString();
+                    break;
+
+                case string s
+                when s.StartsWith("input$"):
+                    string[] invar = lines[curLine].Replace("input$", "").Split(";");
+                    if (invar.Length > 2)
+                        ParseError("Wrong number of arguments", curLine);
+
+                    bool inexists = false;
+
+                    foreach (Variable item in vars)
+                    {
+                        if (item.name == invar[0])
                         {
-                            int valHolder;
-                            if(int.TryParse(item.val, out valHolder))
+                            inexists = true;
+                            string input = "";
+
+
+                            int varHolder;
+                            if (invar.Length == 2 && invar[1] == "int")
                             {
-                                valHolder += addition;
-                                item.val = valHolder.ToString();
+                                do
+                                {
+                                    Console.Write("> ");
+                                    input = Console.ReadLine();
+                                } while (!int.TryParse(input, out varHolder));
                             }
                             else
                             {
-                                ParseError("Variable is not holding an integer (whole number)", curLine);
+                                do
+                                {
+                                    Console.Write("> ");
+                                    input = Console.ReadLine();
+                                } while (input == "");
                             }
+
+                            item.val = input;
                         }
                     }
-                }
 
-                if (!exists)
-                {
-                    //vars.Add(new Variable(var, 0));
-                    ParseError($"Variable ({var[0]}) doesn't exist", curLine);
-                }
-            }
-            else if (lines[curLine].StartsWith("multiply$"))
-            {
-                string[] var = lines[curLine].Replace("multiply$", "").Split(";");
-                if (var.Length != 2)
-                    ParseError("Wrong number of arguments", curLine);
-
-                bool exists = false;
-
-                foreach (Variable item in vars)
-                {
-                    if (item.name == var[0])
+                    if (!inexists)
                     {
-                        exists = true;
-                        int multiplier;
-                        if (!int.TryParse(var[1], out multiplier))
+                        //vars.Add(new Variable(var, 0));
+                        ParseError($"Variable ({invar[0]}) doesn't exist", curLine);
+                    }
+                    break;
+
+                case string s
+                when s.StartsWith("--"):
+                    HandleEvent(lines[curLine]);
+                    break;
+
+                case string s
+                when s.StartsWith("-"):
+                    int parsingLine;
+
+                    List<string> outcomes = new List<string>();
+                    List<string> choices = new List<string>();
+
+                    parsingLine = curLine;
+
+                    while (parsingLine < lines.Length && lines[parsingLine].StartsWith("-"))
+                    {
+                        string[] choice = lines[parsingLine].Split(";");
+                        Console.WriteLine(choice[0]);
+
+                        choices.Add(choice[0]);
+
+                        if (choice.Length < 2)
                         {
-                            ParseError("Given value is not an integer (whole number)", curLine);
+                            ParseError("Choice doesn't contain an outcome.", parsingLine);
                         }
                         else
+                            outcomes.Add(choice[1]);
+
+                        parsingLine++;
+                    }
+
+                    bool found = false;
+
+                    do
+                    {
+                        Console.Write("> ");
+                        string input = Console.ReadLine();
+
+                        for (int i = 0; i < choices.Count; i++)
                         {
-                            int valHolder;
-                            if (int.TryParse(item.val, out valHolder))
+                            string ch = choices[i];
+                            bool choicepass = false;
+                            if (ch.Replace("-", "")
+                                .ToLower()
+                                .Replace("!", "")
+                                .Replace(".", "")
+                                .Replace("?", "")
+                                .Replace("'", "")
+                                .Replace(",", "")
+                                == input.Replace("-", "")
+                                .ToLower()
+                                .Replace("!", "")
+                                .Replace(".", "")
+                                .Replace("?", "")
+                                .Replace("'", "")
+                                .Replace(",", ""))
+                                choicepass = true;
+
+                            int usercount = 0;
+
+                            bool parsesuccess = int.TryParse(input, out usercount);
+
+                            if (parsesuccess && i + 1 == usercount)
+                                choicepass = true;
+
+                            if (choicepass)
                             {
-                                valHolder *= multiplier;
-                                item.val = valHolder.ToString();
+                                Console.Clear();
+                                GotoFunction(outcomes[i]);
+                                found = true;
                             }
-                            else
-                            {
-                                ParseError("Variable is not holding an integer (whole number)", curLine);
-                            }
                         }
-                    }
-                }
+                    } while (!found);
+                    break;
 
-                if (!exists)
+                default:
+                    if (lines[curLine].StartsWith(":"))
+                        break;
+                    string line = lines[curLine];
+                    foreach (Variable item in vars)
+                    {
+                        string toreplace = "$" + item.name;
+                        line = line.Replace(toreplace, item.val);
+                    }
+                    Console.WriteLine(line);
+                    break;
+            }
+        }
+
+        static Variable ReturnVar(string input)
+        {
+            Variable output = null;
+            bool success = false;
+            foreach (Variable item in vars)
+            {
+                if (item.name == input)
                 {
-                    //vars.Add(new Variable(var, 0));
-                    ParseError($"Variable ({var[0]}) doesn't exist", curLine);
+                    output = item;
+                    success = true;
                 }
             }
-            else if (lines[curLine].StartsWith("input$"))
+
+            if (!success)
+                ParseError("Variable not found.", curLine);
+            return output;
+        }
+
+        static string RetriveValues(string input)
+        {
+            string output = "null";
+            bool success = false;
+
+            //Logitech
+
+            // If num
+            if(int.TryParse(input, out _))
             {
-                string[] var = lines[curLine].Replace("input$", "").Split(";");
-                if (var.Length > 2)
-                    ParseError("Wrong number of arguments", curLine);
-
-                bool exists = false;
-
-                foreach (Variable item in vars)
-                {
-                    if (item.name == var[0])
-                    {
-                        exists = true;
-                        string input = "";
-                        
-
-                        int varHolder;
-                        if(var.Length == 2 && var[1] == "int")
-                        {
-                            do
-                            {
-                                Console.Write("> ");
-                                input = Console.ReadLine();
-                            } while (!int.TryParse(input, out varHolder));
-                        }
-                        else
-                        {
-                            do
-                            {
-                                Console.Write("> ");
-                                input = Console.ReadLine();
-                            } while (input == "");
-                        }
-
-                        item.val = input;
-                    }
-                }
-
-                if (!exists)
-                {
-                    //vars.Add(new Variable(var, 0));
-                    ParseError($"Variable ({var[0]}) doesn't exist", curLine);
-                }
-            }
-            else if (lines[curLine].StartsWith("--"))
-            {
-                HandleEvent(lines[curLine]);
-            }
-            else if (lines[curLine].StartsWith("-"))
-            {
-                int parsingLine;
-
-                List<string> outcomes = new List<string>();
-                List<string> choices = new List<string>();
-
-                parsingLine = curLine;
-
-                while (parsingLine < lines.Length && lines[parsingLine].StartsWith("-"))
-                {
-                    string[] choice = lines[parsingLine].Split(";");
-                    Console.WriteLine(choice[0]);
-
-                    choices.Add(choice[0]);
-
-                    if (choice.Length < 2)
-                    {
-                        ParseError("Choice doesn't contain an outcome.", parsingLine);
-                    }
-                    else
-                        outcomes.Add(choice[1]);
-
-                    parsingLine++;
-                }
-
-                bool found = false;
-
-                do
-                {
-                    Console.Write("> ");
-                    string input = Console.ReadLine();
-
-                    for (int i = 0; i < choices.Count; i++)
-                    {
-                        string ch = choices[i];
-                        bool choicepass = false;
-                        if (ch.Replace("-", "")
-                            .ToLower()
-                            .Replace("!", "")
-                            .Replace(".", "")
-                            .Replace("?", "")
-                            .Replace("'", "")
-                            .Replace(",", "")
-                            == input.Replace("-", "")
-                            .ToLower()
-                            .Replace("!", "")
-                            .Replace(".", "")
-                            .Replace("?", "")
-                            .Replace("'", "")
-                            .Replace(",", ""))
-                            choicepass = true;
-
-                        int usercount = 0;
-
-                        bool parsesuccess = int.TryParse(input, out usercount);
-
-                        if (parsesuccess && i + 1 == usercount)
-                            choicepass = true;
-
-                        if (choicepass)
-                        {
-                            Console.Clear();
-                            GotoFunction(outcomes[i]);
-                            found = true;
-                        }
-                    }
-                } while (!found);
+                output = input;
+                success = true;
             }
             else
             {
-                string line = lines[curLine];
-                foreach(Variable item in vars)
+                foreach (Variable item in vars)
                 {
-                    string toreplace = "$"+item.name;
-                    line = line.Replace(toreplace, item.val);
+                    if(item.name == input)
+                    {
+                        output = item.val;
+                        success = true;
+                    }
                 }
-                Console.WriteLine(line);
             }
+
+            if (!success)
+                ParseError($"Value {input} is not found.",curLine);
+            return output;
         }
 
         static void HandleEvent(string ev)
@@ -344,7 +322,7 @@ namespace adventure
         {
             Console.ForegroundColor = ConsoleColor.Red;
 
-            Console.WriteLine();
+            //Console.WriteLine();
             Console.WriteLine("Parsing Error!");
             Console.WriteLine(error);
             if(errorline != -1)

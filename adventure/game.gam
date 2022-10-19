@@ -15,7 +15,7 @@ goto::feature
 
 :feature
 You can not only write text to display, but you can also provide decisions to the player!
-It's easy to devide your game into segments, using section headers,
+It's easy to divide your game into segments, using section headers,
 which you can jump through easily using the goto:: function.
 You can also use variables! simply declare$ one and then you can set$, add$, multiply$ and take input$ from the user to store values in it!
 -This is great!;end
