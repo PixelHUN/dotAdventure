@@ -107,41 +107,25 @@ namespace adventure
 
                     bool inexists = false;
 
-                    foreach (Variable item in vars)
+                    string input = "";
+
+                    switch(invar[1])
                     {
-                        if (item.name == invar[0])
-                        {
-                            inexists = true;
-                            string input = "";
-
-
-                            int varHolder;
-                            if (invar.Length == 2 && invar[1] == "int")
+                        case "int":
+                            do
                             {
-                                do
-                                {
-                                    Console.Write("> ");
-                                    input = Console.ReadLine();
-                                } while (!int.TryParse(input, out varHolder));
-                            }
-                            else
-                            {
-                                do
-                                {
-                                    Console.Write("> ");
-                                    input = Console.ReadLine();
-                                } while (input == "");
-                            }
+                                Console.Write("> ");
+                                input = Console.ReadLine();
+                            } while (!int.TryParse(input, out _));
+                            break;
 
-                            item.val = input;
-                        }
+                        default:
+                            Console.Write("> ");
+                            input = Console.ReadLine();
+                            break;
                     }
 
-                    if (!inexists)
-                    {
-                        //vars.Add(new Variable(var, 0));
-                        ParseError($"Variable ({invar[0]}) doesn't exist", curLine);
-                    }
+                    ReturnVar(invar[0]).val = input;
                     break;
 
                 case string s
@@ -180,7 +164,7 @@ namespace adventure
                     do
                     {
                         Console.Write("> ");
-                        string input = Console.ReadLine();
+                        string cinput = Console.ReadLine();
 
                         for (int i = 0; i < choices.Count; i++)
                         {
@@ -193,7 +177,7 @@ namespace adventure
                                 .Replace("?", "")
                                 .Replace("'", "")
                                 .Replace(",", "")
-                                == input.Replace("-", "")
+                                == cinput.Replace("-", "")
                                 .ToLower()
                                 .Replace("!", "")
                                 .Replace(".", "")
@@ -204,7 +188,7 @@ namespace adventure
 
                             int usercount = 0;
 
-                            bool parsesuccess = int.TryParse(input, out usercount);
+                            bool parsesuccess = int.TryParse(cinput, out usercount);
 
                             if (parsesuccess && i + 1 == usercount)
                                 choicepass = true;
