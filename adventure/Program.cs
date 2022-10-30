@@ -105,24 +105,20 @@ namespace adventure
                     if (invar.Length > 2)
                         ParseError("Wrong number of arguments", curLine);
 
-                    bool inexists = false;
-
                     string input = "";
 
-                    switch(invar[1])
+                    if (invar.Length == 2 && invar[1] == "int")
                     {
-                        case "int":
-                            do
-                            {
-                                Console.Write("> ");
-                                input = Console.ReadLine();
-                            } while (!int.TryParse(input, out _));
-                            break;
-
-                        default:
+                        do
+                        {
                             Console.Write("> ");
                             input = Console.ReadLine();
-                            break;
+                        } while (!int.TryParse(input, out _));
+                    }
+                    else
+                    {
+                        Console.Write("> ");
+                        input = Console.ReadLine();
                     }
 
                     ReturnVar(invar[0]).val = input;
