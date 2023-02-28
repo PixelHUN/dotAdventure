@@ -2,63 +2,47 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-//using System.Media;
 
 namespace adventure
 {
-    class Program
+    enum TOKEN
     {
-        static string[] lines = new string[0];
-        static int curLine = 0;
-        static bool stop;
+        GOTO,
+        DECLARE,
+        SET,
+        ADD,
+        MULTIPLY,
+        INPUT,
+        EVENT,
+        CHOICE,
+        WRITELINE,
+        NONE
+    }
+    class Parser
+    {
+        public string[] lines = new string[0];
+        public int curLine = 0;
+        public TOKEN token = TOKEN.NONE;
+        public Interpreter ip = new Interpreter();
 
-        public class Variable
+        public void ParseLines()
         {
-            public string name;
-            public string val;
-
-            public Variable(string varname, string varval)
-            {
-                name = varname;
-                val = varval;
-            }
-        }
-
-        static public List<Variable> vars = new List<Variable>();
-
-        static void Main(string[] args)
-        {
-            ReadFile();
-            stop = false;
-
-            do
-            {
-                ParseLines();
-                if (curLine < lines.Length - 1)
-                    curLine++;
-                else
-                    stop = true;
-            } while (!stop);
-            Console.ReadKey();
-        }
-
-        static void ParseLines()
-        {
-            switch(lines[curLine])
+            switch (lines[curLine])
             {
                 case string s
                 when s.StartsWith("goto::"):
-                    string[] got = lines[curLine].Split("::");
-                    GotoFunction(got[1]);
+                    token = TOKEN.GOTO;
+                    
                     break;
 
                 case string s
                 when s.StartsWith("declare$"):
+                    token = TOKEN.DECLARE;
                     string var = lines[curLine].Replace("declare$", "");
 
                     bool exists = false;
 
-                    foreach (Variable item in vars)
+                    foreach (Variable item in Global.vars)
                     {
                         if (item.name == var)
                         {
@@ -67,40 +51,44 @@ namespace adventure
                     }
 
                     if (!exists)
-                        vars.Add(new Variable(var, "0"));
+                        Global.vars.Add(new Variable(var, "0"));
                     break;
 
                 case string s
                 when s.StartsWith("set$"):
+                    token = TOKEN.SET;
                     string[] setarray = lines[curLine].Replace("set$", "").Split(";");
                     if (setarray.Length != 2)
                         ParseError("Wrong number of arguments", curLine);
 
-                    ReturnVar(setarray[0]).val = setarray[1];
+                    VarFunctions.ReturnVar(setarray[0]).val = setarray[1];
                     break;
 
                 case string s
                 when s.StartsWith("add$"):
+                    token = TOKEN.ADD;
                     string[] addvar = lines[curLine].Replace("add$", "").Split(";");
                     if (addvar.Length != 2)
                         ParseError("Wrong number of arguments", curLine);
 
-                    int result = int.Parse(RetriveValues(addvar[0])) + int.Parse(RetriveValues(addvar[1]));
-                    ReturnVar(addvar[0]).val = result.ToString();
+                    int result = int.Parse(VarFunctions.RetriveValues(addvar[0])) + int.Parse(VarFunctions.RetriveValues(addvar[1]));
+                    VarFunctions.ReturnVar(addvar[0]).val = result.ToString();
                     break;
 
                 case string s
                 when s.StartsWith("multiply$"):
+                    token = TOKEN.MULTIPLY;
                     string[] multivar = lines[curLine].Replace("multiply$", "").Split(";");
                     if (multivar.Length != 2)
                         ParseError("Wrong number of arguments", curLine);
 
-                    int mresult = int.Parse(RetriveValues(multivar[0])) * int.Parse(RetriveValues(multivar[1]));
-                    ReturnVar(multivar[0]).val = mresult.ToString();
+                    int mresult = int.Parse(VarFunctions.RetriveValues(multivar[0])) * int.Parse(VarFunctions.RetriveValues(multivar[1]));
+                    VarFunctions.ReturnVar(multivar[0]).val = mresult.ToString();
                     break;
 
                 case string s
                 when s.StartsWith("input$"):
+                    token = TOKEN.INPUT;
                     string[] invar = lines[curLine].Replace("input$", "").Split(";");
                     if (invar.Length > 2)
                         ParseError("Wrong number of arguments", curLine);
@@ -121,16 +109,18 @@ namespace adventure
                         input = Console.ReadLine();
                     }
 
-                    ReturnVar(invar[0]).val = input;
+                    VarFunctions.ReturnVar(invar[0]).val = input;
                     break;
 
                 case string s
                 when s.StartsWith("--"):
+                    token = TOKEN.EVENT;
                     HandleEvent(lines[curLine]);
                     break;
 
                 case string s
                 when s.StartsWith("-"):
+                    token = TOKEN.CHOICE;
                     int parsingLine;
 
                     List<string> outcomes = new List<string>();
@@ -202,8 +192,10 @@ namespace adventure
                 default:
                     if (lines[curLine].StartsWith(":"))
                         break;
+
+                    token = TOKEN.WRITELINE;
                     string line = lines[curLine];
-                    foreach (Variable item in vars)
+                    foreach (Variable item in Global.vars)
                     {
                         string toreplace = "$" + item.name;
                         line = line.Replace(toreplace, item.val);
@@ -211,104 +203,35 @@ namespace adventure
                     Console.WriteLine(line);
                     break;
             }
+            ip.Interpret(token,lines[curLine]);
         }
 
-        static Variable ReturnVar(string input)
+        public void HandleEvent(string ev)
         {
-            Variable output = null;
-            bool success = false;
-            foreach (Variable item in vars)
-            {
-                if (item.name == input)
-                {
-                    output = item;
-                    success = true;
-                }
-            }
-
-            if (!success)
-                ParseError("Variable not found.", curLine);
-            return output;
-        }
-
-        static string RetriveValues(string input)
-        {
-            string output = "null";
-            bool success = false;
-
-            //Logitech
-
-            // If num
-            if(int.TryParse(input, out _))
-            {
-                output = input;
-                success = true;
-            }
-            else
-            {
-                foreach (Variable item in vars)
-                {
-                    if(item.name == input)
-                    {
-                        output = item.val;
-                        success = true;
-                    }
-                }
-            }
-
-            if (!success)
-                ParseError($"Value {input} is not found.",curLine);
-            return output;
-        }
-
-        static void HandleEvent(string ev)
-        {
-            switch(ev)
+            switch (ev)
             {
                 case "--ENDGAME--":
-                    stop = true;
+                    Global.stop = true;
                     break;
             }
         }
 
-        static void ReadFile()
+        public void GotoFunction(string pointer)
         {
-            string gamedir = Directory.GetCurrentDirectory();
-            string gamFile = gamedir + "/game.gam";
-
-            lines = File.ReadAllLines(gamFile);
+            
         }
 
-        static void GotoFunction(string pointer)
-        {
-            bool foundSection = false;
-            for (int l = 0; l < lines.Length; l++)
-            {
-                string line = lines[l];
-                if (line.StartsWith(":") && line == ":" + pointer)
-                {
-                    curLine = l;
-                    foundSection = true;
-                }
-            }
-
-            if(!foundSection)
-            {
-                ParseError($"The defined section ({pointer}) was not found!");
-            }
-        }
-
-        static void ParseError(string error, int errorline = -1)
+        public void ParseError(string error, int errorline = -1)
         {
             Console.ForegroundColor = ConsoleColor.Red;
 
             //Console.WriteLine();
             Console.WriteLine("Parsing Error!");
             Console.WriteLine(error);
-            if(errorline != -1)
+            if (errorline != -1)
             {
                 Console.WriteLine("At:");
-                Console.WriteLine($"Line {errorline+1}");
+                Console.WriteLine($"Line {errorline + 1}");
             }
 
             Console.ResetColor();
