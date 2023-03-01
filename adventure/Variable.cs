@@ -6,10 +6,15 @@ namespace adventure
 {
     public class Variable
     {
-        public string name;
-        public string val;
+        public string name { get; set; }
+        public string val { get; set; }
 
-        public Variable(string varname, string varval)
+        public Variable()
+        {
+            
+        }
+
+        public void Set(string varname, string varval)
         {
             name = varname;
             val = varval;

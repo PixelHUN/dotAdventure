@@ -10,7 +10,7 @@ namespace adventure
         {
             Variable output = null;
             bool success = false;
-            foreach (Variable item in Global.vars)
+            foreach (Variable item in Global.data.vars)
             {
                 if (item.name == input)
                 {
@@ -39,7 +39,7 @@ namespace adventure
             }
             else
             {
-                foreach (Variable item in Global.vars)
+                foreach (Variable item in Global.data.vars)
                 {
                     if (item.name == input)
                     {

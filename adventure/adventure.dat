@@ -1,0 +1,14 @@
+﻿:start
+declare$name
+"Hallóóóó???" - szólt egy távoli hang...
+"Jól vagy? Mi a neved?"
+Mielőtt kinyitnád a szemed reflexből válaszolsz.
+"Az én nevem..."
+input$name
+"$name..."
+Kinyitod a szemed.
+goto::intro
+
+:intro
+"Minden renden? Eléggé beverted a fejed."
+Előtted egy kedves robotka áll.
