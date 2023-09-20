@@ -6,49 +6,36 @@ namespace adventure
 {
     class Interpreter
     {
+        public Dictionary<TOKEN, Action> Actions = new Dictionary<TOKEN, Action>();
         public TOKEN lastToken = TOKEN.NONE;
         public string line = "";
+
+        public Interpreter()
+        {
+            Actions.Add(TOKEN.GOTO, GOTO);
+            Actions.Add(TOKEN.DECLARE, DECLARE);
+            Actions.Add(TOKEN.SET, SET);
+            Actions.Add(TOKEN.ADD, ADD);
+            Actions.Add(TOKEN.MULTIPLY, MULTIPLY);
+            Actions.Add(TOKEN.INPUT, INPUT);
+            Actions.Add(TOKEN.EVENT, EVENT);
+            Actions.Add(TOKEN.CHOICE, CHOICE);
+            Actions.Add(TOKEN.WRITELINE, WRITELINE);
+            Actions.Add(TOKEN.NONE, NONE);
+        }
 
         public void Interpret(TOKEN token,string curline)
         {
             line = curline;
-            switch (token)
-            {
-                case TOKEN.GOTO:
-                    GOTO();
-                    break;
-                case TOKEN.DECLARE:
-                    DECLARE();
-                    break;
-                case TOKEN.SET:
-                    SET();
-                    break;
-                case TOKEN.ADD:
-                    ADD();
-                    break;
-                case TOKEN.MULTIPLY:
-                    MULTIPLY();
-                    break;
-                case TOKEN.INPUT:
-                    INPUT();
-                    break;
-                case TOKEN.EVENT:
-                    EVENT();
-                    break;
-                case TOKEN.CHOICE:
-                    CHOICE();
-                    break;
-                case TOKEN.WRITELINE:
-                    WRITELINE();
-                    break;
-                case TOKEN.NONE:
-                    break;
-                default:
-                    break;
-            }
+            Actions[token]();
         }
 
-        void GOTO()
+        void NONE()
+        {
+            return;
+        }
+
+        public void GOTO()
         {
             string[] pointer = line.Split("::");
             bool foundSection = false;
